@@ -12,10 +12,10 @@ from process_manager import run_group_worker  # пока только объяв
 def read_coins(file_path: str) -> list[str]:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            return [line.strip() for line in f if line.strip()]
+            return [line.strip().upper() for line in f if line.strip()]
     except FileNotFoundError:
-        print(f"[ERROR] Файл монет не найден: {file_path}")
-        sys.exit(1)
+        print(f"[ПРЕДУПРЕЖДЕНИЕ] Файл не найден: {file_path}. Используем монеты по умолчанию.", file=sys.stderr)
+        return ["BTC", "ETH"]
 
 def chunkify(lst: list, size: int) -> list[list]:
     return [lst[i:i + size] for i in range(0, len(lst), size)]
