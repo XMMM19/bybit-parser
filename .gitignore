@@ -1,0 +1,36 @@
+# Виртуальное окружение Python
+venv/
+.env
+; config.yaml  # если содержит реальные прокси или токены
+
+# Входные данные (монеты и прокси)
+coins_bybit_spot.txt
+proxies_bybit_*.txt
+
+# Кэш/временные файлы
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Логи
+logs/
+*.log
+
+# Результаты работы
+*.sqlite3
+*.db
+*.csv
+*.json
+*.xlsx
+*.bak
+
+# Системные файлы редакторов
+.vscode/
+.idea/
+*.swp
+
+# OS специфические
+.DS_Store
+Thumbs.db
+
+bybit_orderbook_parser.py

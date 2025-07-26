@@ -1,0 +1,22 @@
+# config.yaml
+
+coins_file: "coins_bybit_spot.txt"
+coins_per_process: 10
+
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+
+proxy:
+  rest_file: "proxies_bybit_h.txt"
+  ws_file: "proxies_bybit_s.txt"
+
+update:
+  rest_interval_sec: 1800
+  max_ws_reconnect_attempts: 3
+
+logging:
+  level: "INFO"
+  to_file: true
+  log_dir: "logs"
