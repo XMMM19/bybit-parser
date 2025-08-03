@@ -3,9 +3,12 @@
 from multiprocessing import Process
 import time
 from process_manager import run_group_worker
-from logger_config import setup_logger
+import logging
+# from logger_config import setup_logger
 
-logger = setup_logger("supervisor")
+# logger = setup_logger("supervisor")
+
+logger = logging.getLogger("supervisor")
 
 class ProcessManager:
     def __init__(self, coin_groups: list[list[str]], config: dict):

@@ -8,6 +8,8 @@ import requests
 import re
 import sys
 import socks
+import certifi
+import ssl
 from logger_config import setup_logger
 
 logger = setup_logger("ws_group")
@@ -72,7 +74,7 @@ def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy:
         for symbol in coin_list:
             payload = {
                 "op": "subscribe",
-                "args": [f"orderbook.40.{symbol}"]
+                "args": [f"orderbook.{depth}.{symbol}"]
             }
             ws.send(json.dumps(payload))
 
@@ -90,6 +92,9 @@ def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy:
 
                 ws_app = websocket.WebSocketApp(ws_url, **ws_opts)
 
+                # Используем certifi для проверки SSL-сертификатов: задаём ca_certs и cert_reqs.
+                ssl_opts = {"ca_certs": certifi.where(), "cert_reqs": ssl.CERT_REQUIRED}
+
                 if ws_proxy:
                     parsed = parse_proxy(ws_proxy, proxy_type="socks5")
                     if parsed:
@@ -99,13 +104,14 @@ def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy:
                             http_proxy_host=host,
                             http_proxy_port=port,
                             http_proxy_auth=auth,
-                            proxy_type=proxy_type
+                            proxy_type=proxy_type,
+                            sslopt=ssl_opts,
                         )
                     else:
                         logger.warning(f"[WS-{group_id}] Некорректный формат прокси: {ws_proxy}")
-                        ws_app.run_forever()
+                        ws_app.run_forever(sslopt=ssl_opts)
                 else:
-                    ws_app.run_forever()
+                    ws_app.run_forever(sslopt=ssl_opts)
 
             except Exception as e:
                 logger.error(f"[WS-{group_id}] Ошибка соединения: {e}")

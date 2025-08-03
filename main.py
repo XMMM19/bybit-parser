@@ -26,6 +26,16 @@ def main():
 
     config = load_config(args.config)
 
+    # 1. Вытаскиваем конфиг логгера
+    log_cfg = config.get("logging", {})
+    log_level = log_cfg.get("level", "INFO")
+    log_to_file = log_cfg.get("to_file", True)
+    log_dir = log_cfg.get("log_dir", "logs")
+
+    # 2. Настраиваем логгер для основного процесса
+    setup_logger("main", level=log_level, log_to_file=log_to_file, log_dir=log_dir)
+    setup_logger("supervisor", level=log_level, log_to_file=log_to_file, log_dir=log_dir)
+
     coins_file = config["coins_file"]
     coins_per_group = config["coins_per_process"]
 
