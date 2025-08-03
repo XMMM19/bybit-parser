@@ -1,6 +1,7 @@
 # config.yaml
 
-coins_file: "coins_bybit_spot.txt"
+# coins_file: "coins_bybit_spot.txt"
+coins_file: "test_30.txt"
 coins_per_process: 10
 
 redis:

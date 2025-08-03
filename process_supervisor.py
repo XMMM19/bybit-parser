@@ -3,7 +3,9 @@
 from multiprocessing import Process
 import time
 from process_manager import run_group_worker
+from logger_config import setup_logger
 
+logger = setup_logger("supervisor")
 
 class ProcessManager:
     def __init__(self, coin_groups: list[list[str]], config: dict):
@@ -16,7 +18,7 @@ class ProcessManager:
             self._start_process(idx, group)
 
     def _start_process(self, group_id: int, coin_group: list[str]):
-        print(f"[WATCHDOG] Запуск процесса группы {group_id}")
+        logger.info(f"Запуск процесса группы {group_id}")
         p = Process(target=run_group_worker, args=(group_id, coin_group, self.config))
         p.start()
         self.processes[group_id] = p
@@ -26,10 +28,10 @@ class ProcessManager:
             while True:
                 for group_id, process in list(self.processes.items()):
                     if not process.is_alive():
-                        print(f"[WATCHDOG] Процесс {group_id} упал. Перезапуск...")
+                        logger.warning(f"Процесс {group_id} упал. Перезапуск...")
                         self._start_process(group_id, self.coin_groups[group_id])
                 time.sleep(10)
         except KeyboardInterrupt:
-            print("[WATCHDOG] Завершение по Ctrl+C")
+            logger.info("Завершение по Ctrl+C")
             for p in self.processes.values():
                 p.terminate()

@@ -34,3 +34,5 @@ logs/
 Thumbs.db
 
 bybit_orderbook_parser.py
+test_30.txt
+test_redis_connection.py
