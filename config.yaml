@@ -20,8 +20,8 @@ proxy:
 update:
   rest_interval_sec: 60
   max_ws_reconnect_attempts: 3
-  # Глубина стакана для подписки по WebSocket.
-  orderbook_depth: 1
+  # Глубина стакана для подписки по WebSocket. Тут можно поставить только 1, 50 или 200 по документаций.
+  orderbook_depth: 200
 
 logging:
   level: "INFO"

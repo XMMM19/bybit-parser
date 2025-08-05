@@ -40,3 +40,4 @@ test_120.txt
 test_redis_connection.py
 redis_reader.py
 redis_reader_all_test.py
+dump.rdb

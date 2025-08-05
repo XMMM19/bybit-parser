@@ -11,6 +11,7 @@ import socks
 import certifi
 import ssl
 from logger_config import setup_logger
+from orderbook import OrderBook
 
 logger = setup_logger("ws_group")
 
@@ -51,19 +52,120 @@ def start_rest_worker(group_id: int, coin_list: list[str], redis_client, rest_pr
     t.start()
     return t
 
+# def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy: str, max_attempts: int, depth: int):
+#     def on_message(ws, message):
+#         try:
+#             data = json.loads(message)
+#             prefix = f"orderbook.{depth}."
+#             if data.get("topic", "").startswith(prefix):
+#                 symbol = data["topic"].split(".")[-1]
+#                 orderbook = {
+#                     "bids": data.get("data", {}).get("b", []),
+#                     "asks": data.get("data", {}).get("a", []),
+#                     "source": "WS"
+#                 }
+#                 redis_client.save_orderbook(symbol, orderbook)
+#         except Exception as e:
+#             logger.error(f"[WS-{group_id}] Ошибка обработки сообщения: {e}")
+
+#     def on_error(ws, error):
+#         logger.error(f"[WS-{group_id}] Ошибка WebSocket: {error}")
+
+#     def on_close(ws, close_status_code, close_msg):
+#         logger.warning(f"[WS-{group_id}] Соединение закрыто: {close_status_code} / {close_msg}")
+
+#     def on_open(ws):
+#         logger.info(f"[WS-{group_id}] WebSocket открыт, подписка на монеты")
+#         for symbol in coin_list:
+#             payload = {
+#                 "op": "subscribe",
+#                 "args": [f"orderbook.{depth}.{symbol}USDT"]
+#             }
+#             ws.send(json.dumps(payload))
+
+#     def run_ws():
+#         reconnect_attempts = 0
+#         while reconnect_attempts < max_attempts:
+#             try:
+#                 ws_url = "wss://stream.bybit.com/v5/public/spot"
+#                 ws_opts = {
+#                     "on_open": on_open,
+#                     "on_message": on_message,
+#                     "on_error": on_error,
+#                     "on_close": on_close
+#                 }
+
+#                 ws_app = websocket.WebSocketApp(ws_url, **ws_opts)
+
+#                 # Используем certifi для проверки SSL-сертификатов: задаём ca_certs и cert_reqs.
+#                 ssl_opts = {"ca_certs": certifi.where(), "cert_reqs": ssl.CERT_REQUIRED}
+
+#                 if ws_proxy:
+#                     parsed = parse_proxy(ws_proxy, proxy_type="socks5")
+#                     if parsed:
+#                         host, port, auth, proxy_type = parsed
+#                         logger.debug(f"[WS-{group_id}] Подключение через SOCKS5 {host}:{port}")
+#                         ws_app.run_forever(
+#                             http_proxy_host=host,
+#                             http_proxy_port=port,
+#                             http_proxy_auth=auth,
+#                             proxy_type=proxy_type,
+#                             sslopt=ssl_opts,
+#                         )
+#                     else:
+#                         logger.warning(f"[WS-{group_id}] Некорректный формат прокси: {ws_proxy}")
+#                         ws_app.run_forever(sslopt=ssl_opts)
+#                 else:
+#                     ws_app.run_forever(sslopt=ssl_opts)
+
+#             except Exception as e:
+#                 logger.error(f"[WS-{group_id}] Ошибка соединения: {e}")
+#                 reconnect_attempts += 1
+#                 time.sleep(5)
+
+#         logger.error(f"[WS-{group_id}] Превышено число попыток подключения, завершение")
+
+#     t = threading.Thread(target=run_ws, daemon=True)
+#     t.start()
+#     return t
+
+
 def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy: str, max_attempts: int, depth: int):
+    orderbooks = {}
+
+    def subscribe_to_symbols(ws):
+        logger.info(f"[WS-{group_id}] WebSocket открыт, подписка на монеты")
+        for symbol in coin_list:
+            payload = {
+                "op": "subscribe",
+                "args": [f"orderbook.{depth}.{symbol}USDT"]
+            }
+            ws.send(json.dumps(payload))
+
+    def update_orderbook(symbol: str, data: dict):
+        ob = orderbooks.setdefault(symbol, OrderBook())
+
+        if data.get("type") == "snapshot":
+            ob.apply_snapshot(data["data"])
+            logger.info(f"[WS-{group_id}] Snapshot применён: {symbol}")
+        elif data.get("type") == "delta":
+            delta_u = data["data"].get("u", 0)
+            if delta_u > ob.u:
+                ob.apply_delta(data["data"])
+                logger.info(f"[WS-{group_id}] Delta применена: {symbol}")
+            else:
+                logger.warning(f"[WS-{group_id}] Старое обновление для {symbol}: u={delta_u} <= {ob.u}")
+
+        redis_client.save_orderbook(symbol, ob.to_dict())
+
     def on_message(ws, message):
         try:
             data = json.loads(message)
             prefix = f"orderbook.{depth}."
-            if data.get("topic", "").startswith(prefix):
-                symbol = data["topic"].split(".")[-1]
-                orderbook = {
-                    "bids": data.get("data", {}).get("b", []),
-                    "asks": data.get("data", {}).get("a", []),
-                    "source": "WS"
-                }
-                redis_client.save_orderbook(symbol, orderbook)
+            topic = data.get("topic", "")
+            if topic.startswith(prefix):
+                symbol = topic.split(".")[-1]
+                update_orderbook(symbol, data)
         except Exception as e:
             logger.error(f"[WS-{group_id}] Ошибка обработки сообщения: {e}")
 
@@ -74,13 +176,7 @@ def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy:
         logger.warning(f"[WS-{group_id}] Соединение закрыто: {close_status_code} / {close_msg}")
 
     def on_open(ws):
-        logger.info(f"[WS-{group_id}] WebSocket открыт, подписка на монеты")
-        for symbol in coin_list:
-            payload = {
-                "op": "subscribe",
-                "args": [f"orderbook.{depth}.{symbol}USDT"]
-            }
-            ws.send(json.dumps(payload))
+        subscribe_to_symbols(ws)
 
     def run_ws():
         reconnect_attempts = 0
