@@ -1,7 +1,9 @@
 # config.yaml
 
 # coins_file: "coins_bybit_spot.txt"
-coins_file: "test_10.txt"
+# coins_file: "test_10.txt"
+# coins_file: "test_30.txt"
+coins_file: "test_120.txt"
 coins_per_process: 10
 
 redis:
@@ -10,19 +12,19 @@ redis:
   db: 0
 
 proxy:
-  # rest_file: "proxies_bybit_h.txt"
-  # ws_file: "proxies_bybit_s.txt"
-  rest_file: ""                  # отключаем REST-прокси
-  ws_file: ""                    # отключаем WS-прокси
+  rest_file: "proxies_bybit_h.txt"
+  ws_file: "proxies_bybit_s.txt"
+  # rest_file: ""                  # отключаем REST-прокси
+  # ws_file: ""                    # отключаем WS-прокси
 
 update:
-  rest_interval_sec: 1800
+  rest_interval_sec: 60
   max_ws_reconnect_attempts: 3
   # Глубина стакана для подписки по WebSocket.
   orderbook_depth: 1
 
 logging:
-  # level: "INFO"
-  level: "DEBUG"
+  level: "INFO"
+  # level: "DEBUG"
   to_file: true
   log_dir: "logs"

@@ -26,10 +26,9 @@ def run_group_worker(group_id: int, coin_list: list[str], config: dict):
 
     rest_interval = config["update"]["rest_interval_sec"]
     ws_attempts = config["update"]["max_ws_reconnect_attempts"]
+    depth = config["update"].get("orderbook_depth", 40)
 
     rest_thread = start_rest_worker(group_id, coin_list, redis_client, rest_proxy, rest_interval)
-
-    depth = config["update"].get("orderbook_depth", 40)
     ws_thread = start_ws_worker(group_id, coin_list, redis_client, ws_proxy, ws_attempts, depth)
 
     rest_thread.join()

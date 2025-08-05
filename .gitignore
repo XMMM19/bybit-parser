@@ -36,4 +36,7 @@ Thumbs.db
 bybit_orderbook_parser.py
 test_10.txt
 test_30.txt
+test_120.txt
 test_redis_connection.py
+redis_reader.py
+redis_reader_all_test.py

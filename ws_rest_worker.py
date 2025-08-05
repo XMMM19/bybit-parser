@@ -26,15 +26,18 @@ def start_rest_worker(group_id: int, coin_list: list[str], redis_client, rest_pr
         while True:
             for coin in coin_list:
                 try:
-                    url = f"https://api.bybit.com/v5/market/orderbook?category=spot&symbol={coin}"
+                    url = f"https://api.bybit.com/v5/market/orderbook?category=spot&symbol={coin}USDT"
                     proxies = {"http": rest_proxy, "https": rest_proxy} if rest_proxy else None
                     response = requests.get(url, proxies=proxies, timeout=10)
 
                     if response.status_code == 200:
                         data = response.json()
+                        result = data.get("result", {})
+                        bids = result.get("b", [])
+                        asks = result.get("a", [])
                         redis_client.save_orderbook(coin, {
-                            "bids": data.get("result", {}).get("bids", []),
-                            "asks": data.get("result", {}).get("asks", []),
+                            "bids": bids,
+                            "asks": asks,
                             "source": "REST"
                         })
                         logger.info(f"[REST-{group_id}] Обновлено: {coin}")
@@ -48,11 +51,12 @@ def start_rest_worker(group_id: int, coin_list: list[str], redis_client, rest_pr
     t.start()
     return t
 
-def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy: str, max_attempts: int):
+def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy: str, max_attempts: int, depth: int):
     def on_message(ws, message):
         try:
             data = json.loads(message)
-            if data.get("topic", "").startswith("orderbook.40."):
+            prefix = f"orderbook.{depth}."
+            if data.get("topic", "").startswith(prefix):
                 symbol = data["topic"].split(".")[-1]
                 orderbook = {
                     "bids": data.get("data", {}).get("b", []),
@@ -74,7 +78,7 @@ def start_ws_worker(group_id: int, coin_list: list[str], redis_client, ws_proxy:
         for symbol in coin_list:
             payload = {
                 "op": "subscribe",
-                "args": [f"orderbook.{depth}.{symbol}"]
+                "args": [f"orderbook.{depth}.{symbol}USDT"]
             }
             ws.send(json.dumps(payload))
 
