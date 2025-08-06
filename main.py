@@ -5,6 +5,7 @@ import sys
 from config_loader import load_config
 from process_supervisor import ProcessManager
 from logger_config import setup_logger
+from redis_handler import RedisClient
 
 logger = setup_logger("main")
 
@@ -43,6 +44,10 @@ def main():
     coin_groups = chunkify(coin_list, coins_per_group)
 
     logger.info(f"Загружено {len(coin_list)} монет, запуск {len(coin_groups)} процессов")
+
+    redis_client = RedisClient()
+    redis_client.redis.flushdb()
+    logger.info("Redis DB очищена перед запуском")
 
     pm = ProcessManager(coin_groups, config)
     pm.start_all()
