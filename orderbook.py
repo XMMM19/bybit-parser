@@ -39,9 +39,12 @@ class OrderBook:
         self.u = delta.get("u", self.u)
 
     def to_dict(self):
+        def format_number(n: float) -> str:
+            return format(n, 'f')  # обычный десятичный формат без экспоненты
+        
         return {
-            "bids": [[str(p), str(s)] for p, s in self.bids.items()],
-            "asks": [[str(p), str(s)] for p, s in self.asks.items()],
+            "bids": [[format_number(p), format_number(s)] for p, s in self.bids.items()],
+            "asks": [[format_number(p), format_number(s)] for p, s in self.asks.items()],
             "u": self.u
         }
 
