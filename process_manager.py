@@ -28,8 +28,15 @@ def run_group_worker(group_id: int, coin_list: list[str], config: dict):
     ws_attempts = config["update"]["max_ws_reconnect_attempts"]
     depth = config["update"].get("orderbook_depth", 40)
 
-    rest_thread = start_rest_worker(group_id, coin_list, redis_client, rest_proxy, rest_interval)
-    ws_thread = start_ws_worker(group_id, coin_list, redis_client, ws_proxy, ws_attempts, depth)
+    threads = []
 
-    rest_thread.join()
-    ws_thread.join()
+    if config["features"].get("enable_rest", True):
+        rest_thread = start_rest_worker(group_id, coin_list, redis_client, rest_proxy, rest_interval)
+        threads.append(rest_thread)
+
+    if config["features"].get("enable_ws", True):
+        ws_thread = start_ws_worker(group_id, coin_list, redis_client, ws_proxy, ws_attempts, depth)
+        threads.append(ws_thread)
+
+    for t in threads:
+        t.join()

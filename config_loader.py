@@ -18,7 +18,7 @@ def load_config(path: str = "config.yaml") -> dict:
         except yaml.YAMLError as e:
             raise ConfigError(f"Ошибка разбора YAML: {e}")
 
-    required_fields = ["coins_file", "coins_per_process", "redis", "proxy", "update"]
+    required_fields = ["coins_file", "coins_per_process", "redis", "proxy", "update", "features"]
     for field in required_fields:
         if field not in config:
             raise ConfigError(f"Отсутствует обязательный раздел: {field}")
@@ -35,5 +35,9 @@ def load_config(path: str = "config.yaml") -> dict:
     for key in ["rest_interval_sec", "max_ws_reconnect_attempts"]:
         if key not in config["update"]:
             raise ConfigError(f"Недостающий параметр update.{key}")
+        
+    for key in ["enable_rest", "enable_ws"]:
+        if key not in config["features"]:
+            raise ConfigError(f"Недостающий параметр features.{key}")
 
     return config

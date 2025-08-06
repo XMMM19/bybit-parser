@@ -28,3 +28,7 @@ logging:
   # level: "DEBUG"
   to_file: true
   log_dir: "logs"
+
+features:
+  enable_rest: false
+  enable_ws: true
